@@ -1,8 +1,6 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <io.h>
-#include <fcntl.h>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
 #include <boost/beast/websocket.hpp>
@@ -32,7 +30,7 @@ void session(tcp::socket socket) {
 		}
 		else {
 			http::response<http::string_body> response = { http::status::method_not_allowed, request.version() };
-			response.body() = "Ожидался метод POST.";
+			response.body() = "Expexted POST method.";
 
 			response.prepare_payload();
 			http::write(socket, response);
@@ -40,13 +38,11 @@ void session(tcp::socket socket) {
 		socket.shutdown(tcp::socket::shutdown_send);
 	}
 	catch (boost::beast::system_error& err) {
-		std::wcout << L"Ошибка: " << err.what() << std::endl;
+		std::cout << "Error: " << err.what() << std::endl;
 	}
 }
 
 int main() {
-	// setlocale(LC_ALL, "ru");
-	_setmode(_fileno(stdout), _O_U16TEXT);
 	// контекст Input-Output
 	asio::io_context iocont;
 
@@ -58,7 +54,7 @@ int main() {
 
 	// acceptor для принятия tcp соединений
 	tcp::acceptor acceptor(iocont, tcp::endpoint(address, port));
-	std::wcout << L"HTTP сервер запущен. Порт - " << port << std::endl;
+	std::cout << "HTTP server started. Port - " << port << std::endl;
 
 	while (true)
 	{
