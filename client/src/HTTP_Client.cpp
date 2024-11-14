@@ -14,27 +14,20 @@ namespace beast = boost::beast;
 namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-// запись ответов в файл base.txt и в отдельные файлы
-void push_response_into_files(std::filesystem::path path, http::response<http::string_body> response) {
-
-    // в base.txt записывается тело каждого ответа
-    std::ofstream all_requests(path / "base.txt", std::ios_base::app);
-    if (all_requests.is_open()) {
-        all_requests << response.body() << std::endl;
-        all_requests.close();
-    }
+// запись ответов в файлы с расширением .jpeg
+void saveResponse(std::filesystem::path path, http::response<http::vector_body<char>> response) {
 
     time_t now = time(0);
     std::tm local_time = *std::localtime(&now);
     std::ostringstream new_file_path;
     // текущая дата и время
-    new_file_path << std::put_time(&local_time, "%d.%m.%Y %H-%M-%S") << ".txt";
+    new_file_path << std::put_time(&local_time, "%d.%m.%Y %H-%M-%S") << ".jpeg";
 
-    // запись ответа в файл с текущей датой и временем в названии
-    std::ofstream current_request(path / new_file_path.str(), std::ios_base::out);
-    if (current_request.is_open()) {
-        current_request << response << std::endl;
-        current_request.close();
+    // создение изображения с текущей датой и временем в названии
+    std::ofstream image_file(path / new_file_path.str(), std::ios::binary);
+    if (image_file.is_open()) {
+        image_file.write(response.body().data(), response.body().size());
+        image_file.close();
     }
 }
 
@@ -45,6 +38,13 @@ int main()
 
     if (!std::filesystem::exists(path_to_requests)) {
         std::filesystem::create_directory(path_to_requests);
+    }
+
+    // путь к папке, на которой находятся изображения для отправки
+    std::filesystem::path images_path = std::filesystem::path(__FILE__).parent_path().parent_path() / "images";
+
+    if (!std::filesystem::exists(images_path)) {
+        std::filesystem::create_directory(images_path);
     }
 
     while (true) {
@@ -68,15 +68,39 @@ int main()
             // установка tcp соединения
             stream.connect(result);
 
-            std::cout << "\nEnter a string to send: ";
-            std::string data = "";
-            std::getline(std::cin, data);
+            std::cout << "List of images" << std::endl
+                << "--------------" << std::endl;
+            for (const auto& image : std::filesystem::directory_iterator(images_path)) {
+                std::cout << image.path().filename() << std::endl;
+            }
+            std::cout << "\nChoose the name of the image to send: " << std::endl;
+            std::string choice;
+            std::getline(std::cin, choice);
 
-            // запрос с текстовыми данными (метод - post)
-            http::request<http::string_body> request{ http::verb::post, "/", 11 };
+            // считывание в бинарном режиме содержимого изображения для передачи
+            std::vector<char> image_data;
+            for (const auto& image : std::filesystem::directory_iterator(images_path)) {
+                if (image.path().filename() == choice) {
+                    std::filesystem::path image_path = images_path / image.path().filename();
+                    std::ifstream image_in_binary_view(image_path, std::ios::binary);
+
+                    // получение размера изображения
+                    image_in_binary_view.seekg(0, std::ios::end);
+                    std::streamsize image_size = image_in_binary_view.tellg();
+                    image_in_binary_view.seekg(0, std::ios::beg);
+
+                    // считываение содержимого изображения в vector
+                    image_data.resize(image_size, '\0');
+                    image_in_binary_view.read(&image_data[0], image_size);
+                }
+            }
+
+            // запрос с изображением, представленный потоком байтов (метод - post)
+            http::request<http::vector_body<char>> request{ http::verb::post, "/", 11 };
             request.set(http::field::host, address);
-            request.set(http::field::content_type, "text/plain");
-            request.body() = data;
+            request.set(http::field::content_type, "image/jpeg");
+            // используется std::move для предотвращения копирования
+            request.body() = std::move(image_data);
             request.prepare_payload();
 
             // отправка запроса через установленное tcp соединение
@@ -86,15 +110,15 @@ int main()
             beast::flat_buffer buffer;
 
             // ответ сервера
-            http::response<http::string_body> response;
+            http::response<http::vector_body<char>> response;
 
             // чтение ответа сервера
             http::read(stream, buffer, response);
 
             std::cout << response << std::endl;
 
-            // запись ответа в файлы
-            push_response_into_files(path_to_requests, response);
+            // сохранение ответа как изображения
+            saveResponse(path_to_requests, response);
 
             beast::error_code errc;
             stream.socket().shutdown(tcp::socket::shutdown_both, errc);

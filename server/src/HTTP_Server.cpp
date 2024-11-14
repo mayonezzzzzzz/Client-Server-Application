@@ -10,22 +10,27 @@ namespace beast = boost::beast;
 namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
+// одна сессия - через сокет
 void session(tcp::socket socket) {
 	try {
 		beast::flat_buffer buffer;
 
-		http::request<http::string_body> request;
+		// запрос с массивом байтов в теле
+		http::request<http::vector_body<char>> request;
 
+		// чтение запроса из сокета в буфер
 		http::read(socket, buffer, request);
 
+		// если метод - POST, создается ответ
 		if (request.method() == http::verb::post) {
-			std::string input = request.body();
-			std::string output = input.append(input);
+			std::vector<char> image_data = request.body();
 
-			http::response<http::string_body> response = { http::status::ok, request.version() };
-			response.body() = output;
-
+			// ответ принимает в себя данные из запроса (пока что без изменений)
+			http::response<http::vector_body<char>> response = { http::status::ok, request.version() };
+			response.body() = std::move(image_data);
+			response.set(http::field::content_type, "image/jpeg");
 			response.prepare_payload();
+			// отправка ответа клиенту через сокет
 			http::write(socket, response);
 		}
 		else {
