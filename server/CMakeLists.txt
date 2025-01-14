@@ -5,6 +5,20 @@ if (Boost_FOUND)
     include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 endif ()
 
-add_executable(http_server src/HTTP_Server.cpp)
+set(JPEG_DIR "C:/Libraries/libjpeg-turbo64")
+set(JPEG_INCLUDE_DIR "${JPEG_DIR}/include")
+set(JPEG_LIBRARY "${JPEG_DIR}/lib/jpeg.lib")
 
-target_link_libraries(http_server ${Boost_LIBRARIES})
+include_directories(${JPEG_INCLUDE_DIR})
+link_directories(${JPEG_DIR}/lib)
+
+set(SERVER_SOURCES
+    src/HTTP_Server.cpp
+    src/MessageHandler.cpp
+    src/Session.cpp
+    src/Compression.cpp
+)
+
+add_executable(http_server ${SERVER_SOURCES})
+
+target_link_libraries(http_server ${Boost_LIBRARIES} ${JPEG_LIBRARY})

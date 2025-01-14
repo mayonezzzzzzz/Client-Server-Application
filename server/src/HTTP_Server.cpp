@@ -1,72 +1,51 @@
+#include "MessageHandler.h"
 #include <iostream>
-#include <string>
+#include <vector>
 #include <thread>
-#include <boost/beast.hpp>
 #include <boost/asio.hpp>
-#include <boost/beast/websocket.hpp>
 
 namespace asio = boost::asio;
-namespace beast = boost::beast;
-namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-// одна сессия - через сокет
-void session(tcp::socket socket) {
-	try {
-		beast::flat_buffer buffer;
-
-		// запрос с массивом байтов в теле
-		http::request<http::vector_body<char>> request;
-
-		// чтение запроса из сокета в буфер
-		http::read(socket, buffer, request);
-
-		// если метод - POST, создается ответ
-		if (request.method() == http::verb::post) {
-			std::vector<char> image_data = request.body();
-
-			// ответ принимает в себя данные из запроса (пока что без изменений)
-			http::response<http::vector_body<char>> response = { http::status::ok, request.version() };
-			response.body() = std::move(image_data);
-			response.set(http::field::content_type, "image/jpeg");
-			response.prepare_payload();
-			// отправка ответа клиенту через сокет
-			http::write(socket, response);
-		}
-		else {
-			http::response<http::string_body> response = { http::status::method_not_allowed, request.version() };
-			response.body() = "Expexted POST method.";
-
-			response.prepare_payload();
-			http::write(socket, response);
-		}
-		socket.shutdown(tcp::socket::shutdown_send);
-	}
-	catch (boost::beast::system_error& err) {
-		std::cout << "Error: " << err.what() << std::endl;
-	}
-}
+/*void do_accept(std::shared_ptr<asio::io_context> ioc, tcp::acceptor& acceptor) {
+    acceptor.async_accept([ioc, &acceptor](boost::system::error_code ec, tcp::socket socket) {
+        if (!ec) {
+            std::cout << "New connection accepted.\n";
+            auto shared_socket = std::make_shared<tcp::socket>(std::move(socket));
+            start_session(shared_socket); // Обрабатываем соединение
+        }
+        else {
+            std::cerr << "Accept error: " << ec.message() << "\n";
+        }
+        do_accept(ioc, acceptor); // Продолжаем принимать новые соединения
+        });
+}*/
 
 int main() {
-	// контекст Input-Output
-	asio::io_context iocont;
+    try {
+        auto ioc = std::make_shared<asio::io_context>(6);
 
-	// порт
-	unsigned short const port = 8080;
+        auto message_handler = std::make_shared<MessageHandler>(ioc);
+        message_handler->startHandle();
 
-	// ip-адрес lockalhost-а
-	auto const address = asio::ip::make_address_v4("127.0.0.1");
+        // пул потоков
+        std::vector<std::thread> threads;
+        threads.reserve(6);
+        for (std::size_t i = 0; i < 6; ++i) {
+            threads.emplace_back([ioc]() {
+                ioc->run(); // Каждый поток запускает обработку задач в io_context
+                });
+        }
 
-	// acceptor для принятия tcp соединений
-	tcp::acceptor acceptor(iocont, tcp::endpoint(address, port));
-	std::cout << "HTTP server started. Port - " << port << std::endl;
+        for (auto& thread : threads) {
+            if (thread.joinable()) {
+                thread.join();
+            }
+        }
+    }
+    catch (boost::system::system_error& err) {
+        std::cerr << "Server start error: " << err.what() << "\n";
+    }
 
-	while (true)
-	{
-		tcp::socket socket(iocont);
-		acceptor.accept(socket);
-		std::thread(session, std::move(socket)).detach();
-	}
-
-	return 0;
+    return 0;
 }
