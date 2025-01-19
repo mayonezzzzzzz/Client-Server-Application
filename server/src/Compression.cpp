@@ -2,7 +2,7 @@
 #include <jpeglib.h>
 #include "Compression.h"
 
-// декомпрессия
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РґРµРєРѕРјРїСЂРµСЃСЃРёРё РїРѕР»СѓС‡РµРЅРЅРѕРіРѕ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
 bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& image_data, int& width, int& height, int& quality) {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -10,7 +10,7 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_decompress(&cinfo);
 
-    // ввод данных
+    // Р’РІРѕРґ РґР°РЅРЅС‹С…
     jpeg_mem_src(&cinfo, reinterpret_cast<const unsigned char*>(jpeg_data.data()), jpeg_data.size());
 
     if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
@@ -19,7 +19,7 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
     }
     width = cinfo.image_width;
     height = cinfo.image_height;
-    // потенциально - функция для сохранения качества (степени сжатия) изображения, используя таблицы квантования
+    // РџРѕС‚РµРЅС†РёР°Р»СЊРЅРѕ - С„СѓРЅРєС†РёСЏ РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ РєР°С‡РµСЃС‚РІР° (СЃС‚РµРїРµРЅРё СЃР¶Р°С‚РёСЏ) РёР·РѕР±СЂР°Р¶РµРЅРёСЏ, РёСЃРїРѕР»СЊР·СѓСЏ С‚Р°Р±Р»РёС†С‹ РєРІР°РЅС‚РѕРІР°РЅРёСЏ
     //quality = quality_from_quantization_tables(cinfo.quant_tbl_ptrs);
 
     jpeg_start_decompress(&cinfo);
@@ -37,7 +37,7 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
     return true;
 }
 
-// компрессия
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РєРѕРјРїСЂРµСЃСЃРёРё РѕР±СЂР°Р±РѕС‚Р°РЅРЅРѕРіРѕ РЅР° СЃРµСЂРІРµСЂРµ РёР·РѕР±СЂР°Р¶РµРЅРёСЏ
 bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& jpeg_data, int width, int height, int& quality) {
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -45,7 +45,7 @@ bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& j
     cinfo.err = jpeg_std_error(&jerr);
     jpeg_create_compress(&cinfo);
 
-    //запись данных в память
+    // Р—Р°РїРёСЃСЊ РґР°РЅРЅС‹С… РІ РїР°РјСЏС‚СЊ
     unsigned char* jpeg_buffer = nullptr;
     unsigned long jpeg_size = 0;
     jpeg_mem_dest(&cinfo, &jpeg_buffer, &jpeg_size);
@@ -66,7 +66,7 @@ bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& j
 
     jpeg_finish_compress(&cinfo);
 
-    //копируем результат в выходной вектор
+    // Р РµР·СѓР»СЊС‚Р°С‚ РєРѕРїРёСЂСѓРµС‚СЃСЏ РІ РІС‹С…РѕРґРЅРѕР№ РІРµРєС‚РѕСЂ
     jpeg_data.assign(reinterpret_cast<char*>(jpeg_buffer), reinterpret_cast<char*>(jpeg_buffer) + jpeg_size);
 
     jpeg_destroy_compress(&cinfo);

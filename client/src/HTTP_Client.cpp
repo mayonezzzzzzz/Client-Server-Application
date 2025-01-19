@@ -45,6 +45,7 @@ int main() {
 
             std::filesystem::path image_path = images_path / (choice + ".jpeg");
             if (!std::filesystem::exists(image_path)) {
+                std::cout << "Image not found: " + image_path.string();
                 logError("Image not found: " + image_path.string());
                 continue;
             }
@@ -54,14 +55,16 @@ int main() {
             size_t image_size = image_file.tellg();
             image_file.seekg(0, std::ios::beg);
 
+            // Отправка сообщения
             std::vector<char> buffer(std::istreambuf_iterator<char>(image_file), {});
             size_t offset = 0;
             while (offset < image_size) {
-                size_t part_size = std::min(BUFFER_SIZE, image_size - offset);
+                size_t part_size = std::min(BUFFER_SIZE, image_size - offset); // Изображение отправляется по частям не более 1Мб
                 sendPart(resolver, socket, address, { buffer.begin() + offset, buffer.begin() + offset + part_size }, choice, offset + part_size == image_size);
                 offset += part_size;
             }
 
+            // Получение ответа от сервера
             receiveParts(socket, choice, responses_path);
             logInfo("Successfully processed image: " + choice);
         }

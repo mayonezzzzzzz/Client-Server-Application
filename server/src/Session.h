@@ -9,10 +9,13 @@ namespace asio = boost::asio;
 namespace http = beast::http;
 using tcp = boost::asio::ip::tcp;
 
+// Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;
 
+// Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
 static std::unordered_map<std::string, std::vector<char>> image_parts;
 
+// Сессия - для обработки сообщений текущего соединения
 class Session : public std::enable_shared_from_this<Session> {
 public:
 	tcp::socket socket;
@@ -20,12 +23,12 @@ public:
 	http::request<http::vector_body<char>> request;
 	Session(tcp::socket&& socket);
 	void Start();
-	//void sendAllParts(std::shared_ptr<tcp::socket> socket, const std::string& image_id, const std::vector<char>& image_data);
 	~Session() {
 		std::cout << "Session object was deleted\n";
 	}
 private:
 	void Read();
+	void sendNextPart(size_t offset, size_t total_size, std::string image_id, std::vector<char>& image_data);
 	void handleRead(boost::system::error_code& err, std::size_t);
 	void handleWrite(boost::system::error_code& err, std::size_t);
 };

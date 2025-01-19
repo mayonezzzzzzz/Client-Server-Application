@@ -4,6 +4,7 @@
 #include <ctime>
 #include <iomanip>
 
+// Функция для логирования событий в файл client.log внутри папки с проектом
 void log(const std::string& level, const std::string& message) {
     std::ofstream log_file("client.log", std::ios::app);
     if (log_file.is_open()) {
