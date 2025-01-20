@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
 project (HTTP_Client)
 
-if (Boost_FOUND)
-    include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
-endif ()
+find_package(Boost REQUIRED COMPONENTS system)
+
+include_directories(SYSTEM ${Boost_INCLUDE_DIRS})
 
 set(CLIENT_SOURCES
     src/HTTP_Client.cpp
@@ -13,4 +13,4 @@ set(CLIENT_SOURCES
 
 add_executable(http_client ${CLIENT_SOURCES})
 
-target_link_libraries(http_client ${Boost_LIBRARIES})
+target_link_libraries(http_client Boost::system)

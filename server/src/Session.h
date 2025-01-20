@@ -15,7 +15,7 @@ const size_t BUFFER_SIZE = 1024 * 1024;
 // Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
 static std::unordered_map<std::string, std::vector<char>> image_parts;
 
-// Сессия - для обработки сообщений текущего соединения
+// Сессия - для обработки сообщения текущего соединения
 class Session : public std::enable_shared_from_this<Session> {
 public:
 	tcp::socket socket;
