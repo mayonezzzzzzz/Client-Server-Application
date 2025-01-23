@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
 

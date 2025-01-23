@@ -1,6 +1,5 @@
 #include "Session.h"
 #include "Compression.h"
-#include <iostream>
 
 // Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;

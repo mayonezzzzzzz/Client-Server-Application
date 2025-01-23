@@ -26,12 +26,14 @@ void receiveParts(tcp::socket& socket, const std::string& image_id, const std::f
         http::response<http::vector_body<char>> response;
         http::read(socket, buffer, response);
 
-        std::string received_id(response["Image-ID"].data(), response["Image-ID"].length());
+        const auto& response_image_id = response["Image-ID"];
+        std::string received_id(response_image_id.data(), response_image_id.length());
         if (received_id != image_id) {
             throw std::runtime_error("Unknown image ID in response");
         }
 
-        image_data.insert(image_data.end(), response.body().begin(), response.body().end());
+        const auto& response_body = response.body();
+        image_data.insert(image_data.end(), response_body.begin(), response_body.end());
 
         if (response["Last-Part"] == "1") {
             break;
