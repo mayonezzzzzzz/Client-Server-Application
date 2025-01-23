@@ -1,5 +1,12 @@
 #include "Session.h"
 #include "Compression.h"
+#include <iostream>
+
+// Максимальный размер тела сообщения - 1Мб
+const size_t BUFFER_SIZE = 1024 * 1024;
+
+// Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
+static std::unordered_map<std::string, std::vector<char>> image_parts;
 
 Session::Session(tcp::socket&& socket) : socket(std::move(socket)), buffer(), request() {};
 

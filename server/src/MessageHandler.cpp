@@ -1,6 +1,5 @@
 #include "MessageHandler.h"
 #include "Session.h"
-#include <iostream>
 
 MessageHandler::MessageHandler(std::shared_ptr<asio::io_context> ioc) :
     ioc(ioc), acceptor(*ioc, tcp::endpoint(asio::ip::make_address_v4("127.0.0.1"), 8080)) {
