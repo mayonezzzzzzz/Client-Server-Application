@@ -1,110 +1,77 @@
-#include <iostream>
-#include <string>
-#include <filesystem>
-#include <fstream>
-#include <ctime>
-#include <boost/beast.hpp>
+#include "ImageHandler.h"
+#include "Logger.h"
 #include <boost/asio.hpp>
-#include <boost/beast/websocket.hpp>
-
-#pragma warning(disable : 4996)
+#include <filesystem>
+#include <iostream>
+#include <fstream>
+#include <vector>
+#include <string>
 
 namespace asio = boost::asio;
-namespace beast = boost::beast;
-namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-// запись ответов в файл base.txt и в отдельные файлы
-void push_response_into_files(std::filesystem::path path, http::response<http::string_body> response) {
+int main() {
+    std::filesystem::path images_path = std::filesystem::path(__FILE__).parent_path().parent_path() / "images";
+    std::filesystem::path responses_path = std::filesystem::path(__FILE__).parent_path().parent_path() / "responses";
 
-    // в base.txt записывается тело каждого ответа
-    std::ofstream all_requests(path / "base.txt", std::ios_base::app);
-    if (all_requests.is_open()) {
-        all_requests << response.body() << std::endl;
-        all_requests.close();
+    if (!std::filesystem::exists(images_path)) {
+        std::filesystem::create_directory(images_path);
     }
 
-    time_t now = time(0);
-    std::tm local_time = *std::localtime(&now);
-    std::ostringstream new_file_path;
-    // текущая дата и время
-    new_file_path << std::put_time(&local_time, "%d.%m.%Y %H-%M-%S") << ".txt";
-
-    // запись ответа в файл с текущей датой и временем в названии
-    std::ofstream current_request(path / new_file_path.str(), std::ios_base::out);
-    if (current_request.is_open()) {
-        current_request << response << std::endl;
-        current_request.close();
-    }
-}
-
-int main()
-{
-    // выход из папки src, путь к папке responses в client
-    std::filesystem::path path_to_requests = std::filesystem::path(__FILE__).parent_path().parent_path() / "responses";
-
-    if (!std::filesystem::exists(path_to_requests)) {
-        std::filesystem::create_directory(path_to_requests);
+    if (!std::filesystem::exists(responses_path)) {
+        std::filesystem::create_directory(responses_path);
     }
 
     while (true) {
         try {
-            // контекст Input-Output
-            asio::io_context iocont;
+            asio::io_context ioc;
+            tcp::resolver resolver(ioc);
+            tcp::socket socket(ioc);
 
-            tcp::resolver resolver(iocont);
-
-            beast::tcp_stream stream(iocont);
-
-            // порт
+            std::string const address = "127.0.0.1";
             std::string const port = "8080";
 
-            // ip-адрес lockalhost-а
-            std::string const address = "127.0.0.1";
+            auto endpoints = resolver.resolve(address, port);
+            asio::connect(socket, endpoints);
 
-            // список из endpoints (конечных точек)
-            auto const result = resolver.resolve(address, port);
+            std::cout << "Available images:\n";
+            for (const auto& image : std::filesystem::directory_iterator(images_path)) {
+                std::cout << image.path().filename() << "\n";
+            }
 
-            // установка tcp соединения
-            stream.connect(result);
+            std::cout << "Enter the name of the image to send: ";
+            std::string choice;
+            std::getline(std::cin, choice);
 
-            std::cout << "\nEnter a string to send: ";
-            std::string data = "";
-            std::getline(std::cin, data);
+            std::filesystem::path image_path = images_path / (choice + ".jpeg");
+            if (!std::filesystem::exists(image_path)) {
+                std::cout << "Image not found: " + image_path.string();
+                logError("Image not found: " + image_path.string());
+                continue;
+            }
 
-            // запрос с текстовыми данными (метод - post)
-            http::request<http::string_body> request{ http::verb::post, "/", 11 };
-            request.set(http::field::host, address);
-            request.set(http::field::content_type, "text/plain");
-            request.body() = data;
-            request.prepare_payload();
+            std::ifstream image_file(image_path, std::ios::binary);
+            image_file.seekg(0, std::ios::end);
+            size_t image_size = image_file.tellg();
+            image_file.seekg(0, std::ios::beg);
 
-            // отправка запроса через установленное tcp соединение
-            http::write(stream, request);
+            // РћС‚РїСЂР°РІРєР° СЃРѕРѕР±С‰РµРЅРёСЏ
+            std::vector<char> buffer(std::istreambuf_iterator<char>(image_file), {});
+            size_t offset = 0;
+            while (offset < image_size) {
+                size_t part_size = std::min(BUFFER_SIZE, image_size - offset); // РР·РѕР±СЂР°Р¶РµРЅРёРµ РѕС‚РїСЂР°РІР»СЏРµС‚СЃСЏ РїРѕ С‡Р°СЃС‚СЏРј РЅРµ Р±РѕР»РµРµ 1РњР±
+                sendPart(resolver, socket, address, { buffer.begin() + offset, buffer.begin() + offset + part_size }, choice, offset + part_size == image_size);
+                offset += part_size;
+            }
 
-            // буфер для хранения
-            beast::flat_buffer buffer;
-
-            // ответ сервера
-            http::response<http::string_body> response;
-
-            // чтение ответа сервера
-            http::read(stream, buffer, response);
-
-            std::cout << response << std::endl;
-
-            // запись ответа в файлы
-            push_response_into_files(path_to_requests, response);
-
-            beast::error_code errc;
-            stream.socket().shutdown(tcp::socket::shutdown_both, errc);
-            if (errc && errc != beast::errc::not_connected)
-                throw beast::system_error{ errc };
+            // РџРѕР»СѓС‡РµРЅРёРµ РѕС‚РІРµС‚Р° РѕС‚ СЃРµСЂРІРµСЂР°
+            receiveParts(socket, choice, responses_path);
+            logInfo("Successfully processed image: " + choice);
         }
         catch (boost::beast::system_error& err) {
-            std::cout << "Error: " << err.what() << std::endl;
+            std::cout << "Error: " << err.what() << std::endl << std::endl;
+            logError(err.what());
         }
     }
-
     return 0;
 }

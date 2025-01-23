@@ -1,67 +1,36 @@
+#include "MessageHandler.h"
 #include <iostream>
-#include <string>
+#include <vector>
 #include <thread>
-#include <boost/beast.hpp>
 #include <boost/asio.hpp>
-#include <boost/beast/websocket.hpp>
 
 namespace asio = boost::asio;
-namespace beast = boost::beast;
-namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-void session(tcp::socket socket) {
-	try {
-		beast::flat_buffer buffer;
-
-		http::request<http::string_body> request;
-
-		http::read(socket, buffer, request);
-
-		if (request.method() == http::verb::post) {
-			std::string input = request.body();
-			std::string output = input.append(input);
-
-			http::response<http::string_body> response = { http::status::ok, request.version() };
-			response.body() = output;
-
-			response.prepare_payload();
-			http::write(socket, response);
-		}
-		else {
-			http::response<http::string_body> response = { http::status::method_not_allowed, request.version() };
-			response.body() = "Expexted POST method.";
-
-			response.prepare_payload();
-			http::write(socket, response);
-		}
-		socket.shutdown(tcp::socket::shutdown_send);
-	}
-	catch (boost::beast::system_error& err) {
-		std::cout << "Error: " << err.what() << std::endl;
-	}
-}
-
 int main() {
-	// контекст Input-Output
-	asio::io_context iocont;
+    try {
+        const auto& numOfProcessors = std::thread::hardware_concurrency();
+        auto ioc = std::make_shared<asio::io_context>(numOfProcessors);
 
-	// порт
-	unsigned short const port = 8080;
+        auto message_handler = std::make_shared<MessageHandler>(ioc);
+        message_handler->startHandle();
 
-	// ip-адрес lockalhost-а
-	auto const address = asio::ip::make_address_v4("127.0.0.1");
+        // Пул потоков
+        std::vector<std::thread> threads;
+        threads.reserve(numOfProcessors);
+        for (std::size_t i = 0; i < numOfProcessors; ++i) {
+            threads.emplace_back([ioc]() {
+                ioc->run(); // Каждый поток запускает обработку задач в io_context
+                });
+        }
 
-	// acceptor для принятия tcp соединений
-	tcp::acceptor acceptor(iocont, tcp::endpoint(address, port));
-	std::cout << "HTTP server started. Port - " << port << std::endl;
+        for (auto& thread : threads) {
+            thread.join();
+        }
+    }
+    catch (boost::system::system_error& err) {
+        std::cerr << "Server start error: " << err.what() << "\n";
+    }
 
-	while (true)
-	{
-		tcp::socket socket(iocont);
-		acceptor.accept(socket);
-		std::thread(session, std::move(socket)).detach();
-	}
-
-	return 0;
+    return 0;
 }
