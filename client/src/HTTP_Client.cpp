@@ -10,9 +10,31 @@
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
+void detectDirectory(std::string& path_str) {
+    std::ifstream path_file("path.txt", std::ios::in);
+    if (path_file.is_open()) {
+        std::getline(path_file, path_str);
+        path_file.close();
+    }
+    else {
+        std::ofstream new_path_file("path.txt", std::ios::trunc);
+        if (new_path_file.is_open()) {
+            new_path_file.close();
+        }
+    }
+
+    if (!std::filesystem::exists(path_str) && !std::filesystem::is_directory(path_str)) {
+        path_str = ".";
+    }
+}
+
 int main() {
-    std::filesystem::path images_path = std::filesystem::path(__FILE__).parent_path().parent_path() / "images";
-    std::filesystem::path responses_path = std::filesystem::path(__FILE__).parent_path().parent_path() / "responses";
+    std::string path_str;
+    detectDirectory(path_str);
+    std::filesystem::path path = path_str;
+
+    std::filesystem::path images_path = path;
+    std::filesystem::path responses_path = path / "responses";
 
     if (!std::filesystem::exists(images_path)) {
         std::filesystem::create_directory(images_path);
@@ -21,6 +43,8 @@ int main() {
     if (!std::filesystem::exists(responses_path)) {
         std::filesystem::create_directory(responses_path);
     }
+
+    std::cout << "If you want to specify a directory to take images from, write the full path to it into the file \"path.txt\" in the root of the project\n\n";
 
     while (true) {
         try {
