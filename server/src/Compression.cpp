@@ -38,7 +38,7 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
 }
 
 // Функция для компрессии обработанного на сервере изображения
-bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& jpeg_data, int width, int height, int& quality) {
+bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& jpeg_data, const int width, const int height, const int quality) {
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
 
