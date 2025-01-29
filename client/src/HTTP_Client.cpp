@@ -97,21 +97,28 @@ int main() {
 
             // Отправка сообщения
             std::vector<char> buffer(std::istreambuf_iterator<char>(image_file), {});
+            const auto& buffer_begin = buffer.begin();
+
             size_t offset = 0;
             bool is_first_part = true;
-            while (offset < image_size) {\
+
+            while (offset < image_size) {
                 /*  Изображение отправляется по частям не более 1Мб
                     Учитывается место для текста при отправке первой части  */
                 size_t part_size = std::min(BUFFER_SIZE - overlay_text.size() - 2, image_size - offset); 
-                std::vector<char> part(buffer.begin() + offset, buffer.begin() + offset + part_size);
+                std::vector<char> part(buffer_begin + offset, buffer_begin + offset + part_size);
 
                 // В первой части - текст + часть изображения, затем - без текста
                 if (is_first_part) {
                     std::string separator = "\n\n"; // Разделитель между текстом и изображением
                     std::vector<char> text_data_and_part(overlay_text.begin(), overlay_text.end());
-                    text_data_and_part.insert(text_data_and_part.end(), separator.begin(), separator.end());
-                    text_data_and_part.insert(text_data_and_part.end(), part.begin(), part.end());
+
+                    const auto& text_and_data_part_end = text_data_and_part.end();
+                    text_data_and_part.insert(text_and_data_part_end, separator.begin(), separator.end());
+                    text_data_and_part.insert(text_and_data_part_end, part.begin(), part.end());
+
                     sendPart(resolver, socket, address, text_data_and_part, choice, offset + part_size == image_size);
+
                     is_first_part = false;
                     overlay_text.clear();
                 }
