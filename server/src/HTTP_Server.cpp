@@ -9,7 +9,7 @@ using tcp = asio::ip::tcp;
 
 int main() {
     try {
-        const auto& numOfProcessors = std::max(1, std::thread::hardware_concurrency());
+        const auto& numOfProcessors = std::max(1u, std::thread::hardware_concurrency());
         auto ioc = std::make_shared<asio::io_context>(numOfProcessors);
 
         auto message_handler = std::make_shared<MessageHandler>(ioc);
