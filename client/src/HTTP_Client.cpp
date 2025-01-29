@@ -10,7 +10,7 @@
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-const size_t MAX_INPUT_LENGTH = 50;
+const size_t MAX_INPUT_LENGTH = 100;
 const size_t BUFFER_SIZE = 1024 * 1024;
 
 void detectDirectory(std::string& path_str) {
@@ -63,7 +63,9 @@ int main() {
 
             std::cout << "Available images:\n";
             for (const auto& image : std::filesystem::directory_iterator(images_path)) {
-                std::cout << image.path().filename() << "\n";
+                if (image.path().extension() == ".jpeg") {
+                    std::cout << image.path().filename() << "\n";
+                }
             }
 
             std::cout << "Enter the name of the image to send: ";
@@ -100,7 +102,7 @@ int main() {
             while (offset < image_size) {\
                 /*  Изображение отправляется по частям не более 1Мб
                     Учитывается место для текста при отправке первой части  */
-                size_t part_size = std::min(BUFFER_SIZE - overlay_text.size(), image_size - offset); 
+                size_t part_size = std::min(BUFFER_SIZE - overlay_text.size() - 2, image_size - offset); 
                 std::vector<char> part(buffer.begin() + offset, buffer.begin() + offset + part_size);
 
                 // В первой части - текст + часть изображения, затем - без текста
@@ -123,7 +125,7 @@ int main() {
             // Получение ответа от сервера
             receiveParts(socket, choice, responses_path);
             logInfo("Successfully processed image: " + choice);
-            std::cout << "Successfully processed image: " << choice;
+            std::cout << "Successfully processed image: " << choice << ".jpeg";
         }
         catch (boost::beast::system_error& err) {
             std::cout << "Error: " << err.what() << std::endl << std::endl;
