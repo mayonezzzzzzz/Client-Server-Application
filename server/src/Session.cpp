@@ -1,11 +1,15 @@
+#include <iostream>
 #include "Session.h"
 #include "Compression.h"
+#include "ImageProcessor.h"
 
 // Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;
 
 // Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
 static std::unordered_map<std::string, std::vector<char>> image_parts;
+// Для хранения текста для наложения на изображение
+static std::unordered_map<std::string, std::string> text_parts;
 
 Session::Session(tcp::socket&& socket) : socket(std::move(socket)), buffer(), request() {};
 
@@ -20,7 +24,7 @@ void Session::Read() {
 }
 
 // Функция для отправки следующей части изображения клиенту
-void Session::sendNextPart(size_t offset, size_t total_size, std::string image_id, std::vector<char>& image_data) {
+void Session::sendNextPart(size_t offset, size_t total_size, const std::string& image_id, const std::vector<char>& image_data) {
     if (offset < total_size) {
         size_t part_size = std::min(BUFFER_SIZE, total_size - offset);
         bool is_last_part = (offset + part_size == total_size);
@@ -48,43 +52,44 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
     if (!err) {
         std::cout << "Inside async_read\n";
         if (request.method() == http::verb::post) {
-            std::string image_id(request.at("Image-ID").data(), request.at("Image-ID").size());
+
+            const auto& request_image_id = request.at("Image-ID");
+            std::string image_id(request_image_id.data(), request_image_id.size());
             bool is_last_part = (request.at("Last-Part") == "1");
 
-            std::vector<char>& image_data = image_parts[image_id];
-            // Добравление изображения в map для его хранения
-            image_data.insert(image_data.end(), request.body().begin(), request.body().end());
-            std::cout << "Received part size: " << request.body().size() << std::endl;
-            request.body().clear();
+            auto& request_body = request.body();
+            std::vector<char> body_data(request_body.begin(), request_body.end());
+            std::cout << "Received part size: " << request_body.size() << std::endl;
+            request_body.clear();
+
+            if (image_parts.find(image_id) == image_parts.end()) { // если это первая часть изображения
+
+                std::string body_str(body_data.begin(), body_data.end());
+                size_t separator_pos = body_str.find("\n\n");
+
+                if (separator_pos != std::string::npos) {
+
+                    std::string text = body_str.substr(0, separator_pos); // текст для наложения
+                    std::vector<char> image_data(body_str.begin() + separator_pos + 2, body_str.end());
+
+                    std::cout << "Extracted text: " << text << "\n";
+
+                    text_parts[image_id] = std::move(text);
+                    image_parts[image_id] = std::move(image_data);
+                }
+                else {
+                    std::cerr << "Error: No separator found in the first part\n";
+                    return;
+                }
+            }
+            else { // иначе добавляются только данные изображения
+                std::vector<char>& image_data = image_parts[image_id];
+                image_data.insert(image_data.end(), body_data.begin(), body_data.end());
+            }
 
             // Если в запросе помечено, что эта часть изображения - последняя
             if (is_last_part) {
-                // Декомпрессия 
-                std::vector<unsigned char> decompressed_image_data;
-                int width, height, quality = 75; // параметры для функций libjpeg
-
-                std::cout << "Received image size: " << image_data.size() << std::endl;
-                if (decompress(image_data, decompressed_image_data, width, height, quality)) {
-                    // Сжатие 
-                    std::cout << "Decompressed size:" << decompressed_image_data.size() << std::endl;
-                    std::vector<char> compressed_image_data;
-                    if (compress(decompressed_image_data, compressed_image_data, width, height, quality)) {
-                        std::cout << "Compressed size:" << compressed_image_data.size() << std::endl;
-
-                        size_t total_size = compressed_image_data.size();
-                        size_t offset = 0;
-
-                        // Начало отправки ответа клиенту
-                        sendNextPart(offset, total_size, image_id, compressed_image_data);
-                    }
-                    else {
-                        std::cerr << "Error compressing image\n";
-                    }
-                }
-                else {
-                    std::cerr << "Error decompressing image\n";
-                }
-                image_parts.erase(image_id);
+                processImage(image_id);
             }
             else {
                 // Чтение следующего запроса
@@ -95,6 +100,44 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
     else {
         std::cerr << "Error in async_read function: " << err.what() << "\n";
     }
+}
+
+void Session::processImage(const std::string& image_id) {
+    // Добравление изображения и текста в map для его хранения
+    std::vector<char>& image_data = image_parts[image_id];
+    const std::string& text = text_parts[image_id];
+
+    // Декомпрессия 
+    std::vector<unsigned char> decompressed_image_data;
+    int width, height, quality = 75; // параметры для функций libjpeg
+
+    std::cout << "Received image size: " << image_data.size() << std::endl;
+    if (decompress(image_data, decompressed_image_data, width, height, quality)) {
+        // Сжатие 
+        std::cout << "Decompressed size:" << decompressed_image_data.size() << std::endl;
+        std::cout << "Width: " << width << ", Height: " << height << std::endl;
+
+        addTextToImage(decompressed_image_data, width, height, text);
+
+        std::vector<char> compressed_image_data;
+        if (compress(decompressed_image_data, compressed_image_data, width, height, quality)) {
+
+            const size_t total_size = compressed_image_data.size();
+            std::cout << "Compressed size: " << total_size << std::endl;
+            size_t offset = 0;
+
+            // Начало отправки ответа клиенту
+            sendNextPart(offset, total_size, image_id, compressed_image_data);
+        }
+        else {
+            std::cerr << "Error compressing image\n";
+        }
+    }
+    else {
+        std::cerr << "Error decompressing image\n";
+    }
+    image_parts.erase(image_id);
+    text_parts.erase(image_id);
 }
 
 void Session::handleWrite(boost::system::error_code& err, std::size_t) {

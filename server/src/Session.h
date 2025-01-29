@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <boost/beast.hpp>
 #include <boost/asio.hpp>
 
@@ -23,7 +22,8 @@ private:
 	http::request<http::vector_body<char>> request;
 private:
 	void Read();
-	void sendNextPart(size_t offset, size_t total_size, std::string image_id, std::vector<char>& image_data);
 	void handleRead(boost::system::error_code& err, std::size_t);
+	void processImage(const std::string& image_id);
+	void sendNextPart(size_t offset, size_t total_size, const std::string& image_id, const std::vector<char>& image_data);
 	void handleWrite(boost::system::error_code& err, std::size_t);
 };
