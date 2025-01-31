@@ -2,9 +2,15 @@
 #include "Session.h"
 #include "Compression.h"
 #include "ImageProcessor.h"
+#include <atomic>
 
 // Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;
+
+// Максимальное количество обрабатываемых запросов
+const size_t MAX_REQUESTS = 3;
+std::atomic<size_t> active_requests;
+
 
 // Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
 static std::unordered_map<std::string, std::vector<char>> image_parts;
@@ -51,6 +57,25 @@ void Session::sendNextPart(size_t offset, size_t total_size, const std::string& 
 void Session::handleRead(boost::system::error_code& err, std::size_t) {
     if (!err) {
         std::cout << "Inside async_read\n";
+
+        // Если количество обрабатываемых запросов достигло максимального значения
+        if (active_requests.load() >= MAX_REQUESTS) {
+            std::cerr << "Server is busy. Rejecting request.\n";
+
+            auto response = std::make_shared<http::response<http::string_body>>(http::status::service_unavailable, 11);
+            response->set(http::field::content_type, "text/plain");
+            response->body() = "Server is busy. Try again later.";
+            response->prepare_payload();
+
+            http::async_write(socket, *response,
+                beast::bind_front_handler(&Session::handleWrite, shared_from_this())
+            );
+            return;
+        }
+
+        active_requests++;
+        std::cout << "Amount of requests: " << active_requests.load() << std::endl;
+
         if (request.method() == http::verb::post) {
 
             const auto& request_image_id = request.at("Image-ID");
@@ -90,8 +115,10 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
             // Если в запросе помечено, что эта часть изображения - последняя
             if (is_last_part) {
                 processImage(image_id);
+                active_requests--;
             }
             else {
+                active_requests--;
                 // Чтение следующего запроса
                 Read();
             }
