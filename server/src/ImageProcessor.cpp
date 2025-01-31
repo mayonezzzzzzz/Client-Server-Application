@@ -19,7 +19,7 @@ void addTextToImage(std::vector<unsigned char>& image_data, const int& width, co
     double fontScale;
     int thickness;
     cv::Point position;
-    calculateTextProperties(width, height, fontScale, thickness, position);
+    calculateTextProperties(width, height, text, fontScale, thickness, position);
 
     // Наложение текста
     cv::putText(image, text, position, cv::FONT_HERSHEY_SIMPLEX, fontScale, cv::Scalar(255, 255, 255), thickness);
@@ -36,12 +36,12 @@ void addTextToImage(std::vector<unsigned char>& image_data, const int& width, co
     image_data = encoded_image;*/
 }
 
-void calculateTextProperties(const int& width, const int& height, double& fontScale, int& thickness, cv::Point& position) {
+void calculateTextProperties(const int& width, const int& height, const std::string& text, double& fontScale, int& thickness, cv::Point& position) {
     fontScale = width / 1000.0;
 
     thickness = (width + height) / 1000;
 
     int baseline = 0;
-    cv::Size textSize = cv::getTextSize("Default Text", cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
+    cv::Size textSize = cv::getTextSize(text, cv::FONT_HERSHEY_SIMPLEX, fontScale, thickness, &baseline);
     position = cv::Point((width - textSize.width) / 2, height - textSize.height - 10); // смещение на 10 пикселей от нижнего края 
 }
