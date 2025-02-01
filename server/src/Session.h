@@ -8,6 +8,9 @@ namespace asio = boost::asio;
 namespace http = beast::http;
 using tcp = boost::asio::ip::tcp;
 
+// Максимальное количество обрабатываемых запросов
+extern std::atomic<size_t> MAX_REQUESTS;
+
 // Сессия - для обработки сообщения текущего соединения
 class Session : public std::enable_shared_from_this<Session> {
 public:

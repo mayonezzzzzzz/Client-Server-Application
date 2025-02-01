@@ -7,10 +7,9 @@
 // Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;
 
-// Максимальное количество обрабатываемых запросов
-const size_t MAX_REQUESTS = 3;
+// Текущее количество обрабатываемых запросов
 std::atomic<size_t> active_requests;
-
+std::atomic<size_t> MAX_REQUESTS{ 0 };
 
 // Для хранения изображений, которые обрабатываются сервером (Пара: ID изображения - изображение)
 static std::unordered_map<std::string, std::vector<char>> image_parts;
@@ -59,7 +58,7 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
         std::cout << "Inside async_read\n";
 
         // Если количество обрабатываемых запросов достигло максимального значения
-        if (active_requests.load() >= MAX_REQUESTS) {
+        if (active_requests.load() >= MAX_REQUESTS.load()) {
             std::cerr << "Server is busy. Rejecting request.\n";
 
             auto response = std::make_shared<http::response<http::string_body>>(http::status::service_unavailable, 11);
