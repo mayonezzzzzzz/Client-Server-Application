@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
 
             std::filesystem::path image_path = images_path / (choice + ".jpeg");
             if (!std::filesystem::exists(image_path)) {
-                std::cout << "Image not found: " + image_path.string();
+                std::cout << "Image not found: " + image_path.string() << ".jpeg\n\n";
                 logError("Image not found: " + image_path.string());
                 continue;
             }
