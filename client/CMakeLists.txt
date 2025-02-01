@@ -4,6 +4,7 @@ set(CLIENT_SOURCES
     src/HTTP_Client.cpp
     src/ImageHandler.cpp
     src/Logger.cpp
+    src/Params.cpp
 )
 
 add_executable(http_client ${CLIENT_SOURCES})
