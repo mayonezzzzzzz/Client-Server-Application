@@ -18,6 +18,8 @@ void log(const std::string& level, const std::string& message) {
             % std::put_time(&local_time, "%Y-%m-%d %H:%M:%S")
             % thread_id % level % message
         );
+
+        log_file << log << std::endl;
         //log_file << "[" << std::put_time(&local_time, "%Y-%m-%d %H:%M:%S") << "] [" << level << "] " << message << "\n";
     }
 }
