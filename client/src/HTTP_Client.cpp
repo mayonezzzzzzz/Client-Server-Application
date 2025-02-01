@@ -1,11 +1,9 @@
 #include "ImageHandler.h"
 #include "Logger.h"
+#include "Params.h"
 #include <boost/asio.hpp>
-#include <filesystem>
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
 
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
@@ -13,31 +11,47 @@ using tcp = asio::ip::tcp;
 const size_t MAX_INPUT_LENGTH = 100;
 const size_t BUFFER_SIZE = 1024 * 1024;
 
-void detectDirectory(std::string& path_str) {
-    std::ifstream path_file("path.txt", std::ios::in);
-    if (path_file.is_open()) {
-        std::getline(path_file, path_str);
-        path_file.close();
+bool checkDirectory(const std::filesystem::path& path) {
+    if (!std::filesystem::exists(path)) {
+        std::cerr << "Error: Directory does not exist - " << path << "\n";
+        return false;
     }
-    else {
-        std::ofstream new_path_file("path.txt", std::ios::trunc);
-        if (new_path_file.is_open()) {
-            new_path_file.close();
+    if (!std::filesystem::is_directory(path)) {
+        std::cerr << "Error: Path is not a directory - " << path << "\n";
+        return false;
+    }
+    return true;
+}
+
+void detectDirectories(ClientParams& params) {
+    if (!params.images_path.empty()) {
+        if (!checkDirectory(params.images_path)) {
+            std::cerr << "Using default image directory\n";
+            params.images_path = ".";
         }
     }
-
-    if (!std::filesystem::exists(path_str) && !std::filesystem::is_directory(path_str)) {
-        path_str = ".";
+    else {
+        params.images_path = ".";
+    }
+    if (!params.responses_path.empty()) {
+        if (!checkDirectory(params.responses_path)) {
+            std::cerr << "Using default output directory\n";
+            params.responses_path = ".";
+        }
+    }
+    else {
+        params.responses_path = ".";
     }
 }
 
-int main() {
-    std::string path_str;
-    detectDirectory(path_str);
-    std::filesystem::path path = path_str;
+int main(int argc, char* argv[]) {
+    // Парсинг аргументов командной строки
+    ClientParams params = parseCommandLine(argc, argv);
 
-    std::filesystem::path images_path = path;
-    std::filesystem::path responses_path = path / "responses";
+    detectDirectories(params);
+
+    std::filesystem::path images_path = params.images_path;
+    std::filesystem::path responses_path = params.responses_path / "responses";
 
     if (!std::filesystem::exists(images_path)) {
         std::filesystem::create_directory(images_path);
@@ -47,7 +61,7 @@ int main() {
         std::filesystem::create_directory(responses_path);
     }
 
-    std::cout << "If you want to specify a directory to take images from, write the full path to it into the file \"path.txt\" in the root of the project\n\n";
+    std::cout << "If you want to specify a directory to take images from, write the full path to it into the params\n\n";
 
     while (true) {
         try {
@@ -55,10 +69,10 @@ int main() {
             tcp::resolver resolver(ioc);
             tcp::socket socket(ioc);
 
-            std::string const address = "127.0.0.1";
-            std::string const port = "8080";
+            //std::string const address = "127.0.0.1";
+            //std::string const port = "8080";
 
-            auto endpoints = resolver.resolve(address, port);
+            auto endpoints = resolver.resolve(params.server_address, params.server_port);
             asio::connect(socket, endpoints);
 
             std::cout << "Available images:\n";
@@ -80,8 +94,8 @@ int main() {
             }
 
             std::string overlay_text;
-            std::cout << "Enter the text to overlay on the image: ";
-            std::getline(std::cin, overlay_text);
+            /*std::cout << "Enter the text to overlay on the image: ";
+            std::getline(std::cin, overlay_text);*/
 
             if (overlay_text.empty()) {
                 overlay_text = "default text";
@@ -116,13 +130,13 @@ int main() {
                     text_data_and_part.insert(text_data_and_part.end(), separator.begin(), separator.end());
                     text_data_and_part.insert(text_data_and_part.end(), part.begin(), part.end());
 
-                    sendPart(resolver, socket, address, text_data_and_part, choice, offset + part_size == image_size);
+                    sendPart(resolver, socket, params.server_address, text_data_and_part, choice, offset + part_size == image_size);
 
                     is_first_part = false;
                     overlay_text.clear();
                 }
                 else {
-                    sendPart(resolver, socket, address, part, choice, offset + part_size == image_size);
+                    sendPart(resolver, socket, params.server_address, part, choice, offset + part_size == image_size);
                 }
 
                 offset += part_size;
