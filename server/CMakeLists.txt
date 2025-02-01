@@ -18,6 +18,7 @@ set(SERVER_SOURCES
     src/Session.cpp
     src/Compression.cpp
     src/ImageProcessor.cpp
+    src/Params.cpp
 )
 
 add_executable(http_server ${SERVER_SOURCES})
