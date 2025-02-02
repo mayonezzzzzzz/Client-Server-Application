@@ -1,12 +1,12 @@
 #pragma once
-#include <filesystem>
+#include <string>
 
 struct ClientParams {
-    std::string server_address;
-    std::string server_port;
-    std::filesystem::path images_path;
+    std::string address;
+    std::string port;
+    std::string images_path;
     std::string overlay_text;
-    std::filesystem::path responses_path;
+    std::string responses_path;
 };
 
 ClientParams parseCommandLine(int argc, char* argv[]);

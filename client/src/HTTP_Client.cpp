@@ -51,7 +51,7 @@ int main(int argc, char* argv[]) {
     detectDirectories(params);
 
     std::filesystem::path images_path = params.images_path;
-    std::filesystem::path responses_path = params.responses_path / "responses";
+    std::filesystem::path responses_path = std::filesystem::path(params.responses_path) / "responses";
 
     if (!std::filesystem::exists(images_path)) {
         std::filesystem::create_directory(images_path);
@@ -72,7 +72,7 @@ int main(int argc, char* argv[]) {
             //std::string const address = "127.0.0.1";
             //std::string const port = "8080";
 
-            auto endpoints = resolver.resolve(params.server_address, params.server_port);
+            auto endpoints = resolver.resolve(params.address, params.port);
             asio::connect(socket, endpoints);
 
             std::cout << "Available images:\n";
@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            std::string overlay_text;
+            std::string overlay_text = params.overlay_text;
             /*std::cout << "Enter the text to overlay on the image: ";
             std::getline(std::cin, overlay_text);*/
 
@@ -130,13 +130,13 @@ int main(int argc, char* argv[]) {
                     text_data_and_part.insert(text_data_and_part.end(), separator.begin(), separator.end());
                     text_data_and_part.insert(text_data_and_part.end(), part.begin(), part.end());
 
-                    sendPart(resolver, socket, params.server_address, text_data_and_part, choice, offset + part_size == image_size);
+                    sendPart(resolver, socket, params.address, text_data_and_part, choice, offset + part_size == image_size);
 
                     is_first_part = false;
                     overlay_text.clear();
                 }
                 else {
-                    sendPart(resolver, socket, params.server_address, part, choice, offset + part_size == image_size);
+                    sendPart(resolver, socket, params.address, part, choice, offset + part_size == image_size);
                 }
 
                 offset += part_size;
