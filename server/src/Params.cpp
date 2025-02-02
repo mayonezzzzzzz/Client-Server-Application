@@ -8,11 +8,11 @@ ServerParams parseCommandLine(int argc, char* argv[]) {
     ServerParams params;
 
     // Добавление параметров в описание
-    po::options_description desc;
+    po::options_description desc("Available options");
     desc.add_options()
-        ("help", "Produce help message")
-        ("port", po::value<std::string>(&params.port)->default_value("8080"), "Port")
-        ("max-requests", po::value<size_t>(&params.max_requests)->default_value(3), "Maximum number of parallel requests");
+        ("help, h", "Produce help message")
+        ("port, p", po::value<std::string>(&params.port)->default_value("8080"), "Port")
+        ("max-requests, max", po::value<size_t>(&params.max_requests)->default_value(3), "Maximum number of parallel requests");
 
     // Парсинг
     po::variables_map vm;

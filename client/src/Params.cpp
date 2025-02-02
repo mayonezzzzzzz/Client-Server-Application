@@ -8,14 +8,14 @@ ClientParams parseCommandLine(int argc, char* argv[]) {
     ClientParams params;
 
     // Добавление всех параметров в описание (все необязательные)
-    po::options_description desc;
+    po::options_description desc("Available options");
     desc.add_options()
-        ("help", "Help message")
-        ("address", po::value<std::string>(&params.server_address)->default_value("127.0.0.1"), "Server address")
-        ("port", po::value<std::string>(&params.server_port)->default_value("8080"), "Server port")
-        ("image", po::value<std::filesystem::path>(&params.images_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to the image file")
-        ("text", po::value<std::string>(&params.overlay_text)->default_value("default text"), "Text to overlay on the image")
-        ("output", po::value<std::filesystem::path>(&params.responses_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to save the result");
+        ("help, h", "Help message")
+        ("address, a", po::value<std::string>(&params.server_address)->default_value("127.0.0.1"), "Server address")
+        ("port, p", po::value<std::string>(&params.server_port)->default_value("8080"), "Server port")
+        ("image-path, i", po::value<std::filesystem::path>(&params.images_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to the image file")
+        ("text, t", po::value<std::string>(&params.overlay_text)->default_value("default text"), "Text to overlay on the image")
+        ("output-path, out", po::value<std::filesystem::path>(&params.responses_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to save the result");
 
     // Парсинг
     po::variables_map vm;
