@@ -1,4 +1,2 @@
+# Ignore CMake usual build directory
 build
-client/images
-Libs
-path_to_boost_for_building.txt
