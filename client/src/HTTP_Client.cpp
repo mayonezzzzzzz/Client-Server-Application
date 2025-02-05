@@ -11,37 +11,19 @@ using tcp = asio::ip::tcp;
 const size_t MAX_INPUT_LENGTH = 100;
 const size_t BUFFER_SIZE = 1024 * 1024;
 
-bool checkDirectory(const std::filesystem::path& path) {
-    if (!std::filesystem::exists(path)) {
-        std::cerr << "Error: Directory does not exist - " << path << "\n";
-        return false;
-    }
-    if (!std::filesystem::is_directory(path)) {
-        std::cerr << "Error: Path is not a directory - " << path << "\n";
+bool checkDirectory(std::string& path) {
+    std::error_code ec;
+    if (!std::filesystem::is_directory(path, ec)) {
+        std::cerr << "Invalid directory - " << path << "\n";
+        path = ".";
         return false;
     }
     return true;
 }
 
 void detectDirectories(ClientParams& params) {
-    if (!params.images_path.empty()) {
-        if (!checkDirectory(params.images_path)) {
-            std::cerr << "Using default image directory\n";
-            params.images_path = ".";
-        }
-    }
-    else {
-        params.images_path = ".";
-    }
-    if (!params.responses_path.empty()) {
-        if (!checkDirectory(params.responses_path)) {
-            std::cerr << "Using default output directory\n";
-            params.responses_path = ".";
-        }
-    }
-    else {
-        params.responses_path = ".";
-    }
+    checkDirectory(params.images_path);
+    checkDirectory(params.responses_path);
 }
 
 int main(int argc, char* argv[]) {
@@ -53,13 +35,8 @@ int main(int argc, char* argv[]) {
     std::filesystem::path images_path = params.images_path;
     std::filesystem::path responses_path = std::filesystem::path(params.responses_path) / "responses";
 
-    if (!std::filesystem::exists(images_path)) {
-        std::filesystem::create_directory(images_path);
-    }
-
-    if (!std::filesystem::exists(responses_path)) {
-        std::filesystem::create_directory(responses_path);
-    }
+    std::filesystem::create_directory(images_path);
+    std::filesystem::create_directory(responses_path);
 
     std::cout << "If you want to specify a directory to take images from, write the full path to it into the params\n\n";
 
