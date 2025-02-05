@@ -13,9 +13,9 @@ ClientParams parseCommandLine(int argc, char* argv[]) {
         ("help, h", "Help message")
         ("address, a", po::value<std::string>(&params.address)->default_value("127.0.0.1"), "Server address")
         ("port, p", po::value<std::string>(&params.port)->default_value("8080"), "Server port")
-        ("images-path, i", po::value<std::string>(&params.images_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to the image file")
+        ("images-path, i", po::value<std::string>(&params.images_path)->default_value("."), "Path to the image file")
         ("text, t", po::value<std::string>(&params.overlay_text)->default_value("default text"), "Text to overlay on the image")
-        ("output-path, out", po::value<std::string>(&params.responses_path)->default_value("C:\\Users\\Public\\Pictures"), "Path to save the result");
+        ("output-path, out", po::value<std::string>(&params.responses_path)->default_value("."), "Path to save the result");
 
     // Парсинг
     po::variables_map vm;
