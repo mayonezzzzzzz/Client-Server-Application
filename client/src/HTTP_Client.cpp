@@ -15,6 +15,7 @@ bool checkDirectory(std::string& path) {
     std::error_code ec;
     if (!std::filesystem::is_directory(path, ec)) {
         std::cerr << "Invalid directory - " << path << "\n";
+        std::cerr << "Error: " << ec.message() << "\n";
         path = ".";
         return false;
     }
