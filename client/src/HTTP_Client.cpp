@@ -46,9 +46,6 @@ int main(int argc, char* argv[]) {
             tcp::resolver resolver(ioc);
             tcp::socket socket(ioc);
 
-            //std::string const address = "127.0.0.1";
-            //std::string const port = "8080";
-
             auto endpoints = resolver.resolve(params.address, params.port);
             asio::connect(socket, endpoints);
 
