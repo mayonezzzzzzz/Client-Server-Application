@@ -13,5 +13,5 @@ namespace beast = boost::beast;
 namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-void sendPart(tcp::resolver& resolver, tcp::socket& socket, const std::string& address, const std::vector<char>& part, const std::string& image_id, bool is_last_part);
+void sendPart(tcp::resolver& resolver, tcp::socket& socket, const std::string& address, const std::vector<unsigned char>& part, const std::string& image_id, bool is_last_part);
 void receiveParts(tcp::socket& socket, const std::string& image_id, const std::filesystem::path& save_path);

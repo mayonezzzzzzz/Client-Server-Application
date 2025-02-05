@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
             image_file.seekg(0, std::ios::beg);
 
             // Отправка сообщения
-            std::vector<char> buffer(std::istreambuf_iterator<char>(image_file), {});
+            std::vector<unsigned char> buffer(std::istreambuf_iterator<char>(image_file), {});
             const auto& buffer_begin = buffer.begin();
 
             size_t offset = 0;
@@ -93,12 +93,12 @@ int main(int argc, char* argv[]) {
                 /*  Изображение отправляется по частям не более 1Мб
                     Учитывается место для текста при отправке первой части  */
                 size_t part_size = std::min(BUFFER_SIZE - overlay_text.size() - 2, image_size - offset); 
-                std::vector<char> part(buffer_begin + offset, buffer_begin + offset + part_size);
+                std::vector<unsigned char> part(buffer_begin + offset, buffer_begin + offset + part_size);
 
                 // В первой части - текст + часть изображения, затем - без текста
                 if (is_first_part) {
                     std::string separator = "\n\n"; // Разделитель между текстом и изображением
-                    std::vector<char> text_data_and_part(overlay_text.begin(), overlay_text.end());
+                    std::vector<unsigned char> text_data_and_part(overlay_text.begin(), overlay_text.end());
 
                     text_data_and_part.insert(text_data_and_part.end(), separator.begin(), separator.end());
                     text_data_and_part.insert(text_data_and_part.end(), part.begin(), part.end());
