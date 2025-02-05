@@ -69,8 +69,6 @@ int main(int argc, char* argv[]) {
             }
 
             std::string overlay_text = params.overlay_text;
-            /*std::cout << "Enter the text to overlay on the image: ";
-            std::getline(std::cin, overlay_text);*/
 
             if (overlay_text.empty()) {
                 overlay_text = "default text";
