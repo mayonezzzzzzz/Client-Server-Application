@@ -72,7 +72,7 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
             return;
         }
 
-        active_requests++;
+        ++active_requests;
         std::cout << "Amount of requests: " << active_requests.load() << std::endl;
 
         if (request.method() == http::verb::post) {
@@ -114,10 +114,10 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
             // Если в запросе помечено, что эта часть изображения - последняя
             if (is_last_part) {
                 processImage(image_id);
-                active_requests--;
+                --active_requests;
             }
             else {
-                active_requests--;
+                --active_requests;
                 // Чтение следующего запроса
                 Read();
             }
