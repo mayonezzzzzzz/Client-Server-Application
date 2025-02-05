@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 
         MAX_REQUESTS.store(params.max_requests);
 
-        const auto& numOfProcessors = std::max(1u, std::thread::hardware_concurrency());
+        const auto& numOfProcessors = std::max(1u, std::thread::hardware_concurrency() - 1);
         auto ioc = std::make_shared<asio::io_context>(numOfProcessors);
 
         // Используется порт, указанный в параметрах
