@@ -4,13 +4,10 @@ project(Client_Server_Application)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-find_package(Boost REQUIRED COMPONENTS system program_options)
+find_package(Boost 1.86 REQUIRED COMPONENTS program_options CONFIG)
 
 message(STATUS "Boost include dirs: ${Boost_INCLUDE_DIRS}")
 message(STATUS "Boost library dirs: ${Boost_LIBRARY_DIRS}")
-
-include_directories(${Boost_INCLUDE_DIRS})
-link_directories(${Boost_LIBRARY_DIRS})
 
 add_subdirectory(server)
 add_subdirectory(client)
