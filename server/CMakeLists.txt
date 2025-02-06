@@ -9,13 +9,11 @@ set(SERVER_SOURCES
 
 add_executable(http_server ${SERVER_SOURCES})
 
+find_package(OpenCV REQUIRED)
+
 set(JPEG_DIR "${CMAKE_SOURCE_DIR}/Libs/libjpeg-turbo64")
 set(JPEG_INCLUDE_DIR "${JPEG_DIR}/include")
 set(JPEG_LIBRARY "${JPEG_DIR}/lib/jpeg.lib")
 
-set(OpenCV_DIR "${CMAKE_SOURCE_DIR}/Libs/opencv/build")
-set(OpenCV_INCLUDE_DIR "${OpenCV_DIR}/include")
-set(OpenCV_LIBRARY "${OpenCV_DIR}/x64/vc16/lib/opencv_world4100.lib")
-
-target_include_directories(http_server PRIVATE ${Boost_INCLUDE_DIRS} ${JPEG_INCLUDE_DIR} ${OpenCV_INCLUDE_DIR})
-target_link_libraries(http_server Boost::program_options ${JPEG_LIBRARY} ${OpenCV_LIBRARY})
+target_include_directories(http_server PRIVATE ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${JPEG_INCLUDE_DIR})
+target_link_libraries(http_server Boost::program_options ${OpenCV_LIBS} ${JPEG_LIBRARY})
