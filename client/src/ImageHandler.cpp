@@ -1,11 +1,30 @@
 #include "ImageHandler.h"
+#include <boost/json.hpp>
 #include <iostream>
 #include <fstream>
 #include <ctime>
 #include <iomanip>
 
+namespace json = boost::json;
+
+void sendTextJson(tcp::socket& socket, const std::string& address, const std::string& image_id, const std::string& overlay_text) {
+    http::request<http::string_body> request{ http::verb::post, "/json_metadata", 11 };
+    request.set(http::field::host, address);
+    request.set(http::field::content_type, "application/json");
+    request.set("Image-ID", image_id);
+
+    json::value data = {
+        {"overlay_text", overlay_text}
+    };
+
+    request.body() = json::serialize(data);
+    request.prepare_payload();
+
+    http::write(socket, request);
+}
+
 // Функция для отправки одной части изображения
-void sendPart(tcp::resolver& resolver, tcp::socket& socket, const std::string& address, const std::vector<unsigned char>& part, const std::string& image_id, bool is_last_part) {
+void sendPart(tcp::socket& socket, const std::string& address, const std::vector<unsigned char>& part, const std::string& image_id, bool is_last_part) {
     http::request<http::vector_body<unsigned char>> request{ http::verb::post, "/", 11 };
     request.set(http::field::host, address);
     request.set(http::field::content_type, "image/jpeg");

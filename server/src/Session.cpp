@@ -1,8 +1,11 @@
 #include <iostream>
+#include <boost/json.hpp>
 #include "Session.h"
 #include "Compression.h"
 #include "ImageProcessor.h"
 #include <atomic>
+
+namespace json = boost::json;
 
 // Максимальный размер тела сообщения - 1Мб
 const size_t BUFFER_SIZE = 1024 * 1024;
@@ -73,58 +76,76 @@ void Session::handleRead(boost::system::error_code& err, std::size_t) {
         }
 
         ++active_requests;
-        std::cout << "Amount of requests: " << active_requests.load() << std::endl;
+        std::cout << "Amount of requests: " << active_requests.load() << " / " << MAX_REQUESTS.load() << std::endl;
 
         if (request.method() == http::verb::post) {
 
-            const auto& request_image_id = request.at("Image-ID");
-            std::string image_id(request_image_id.data(), request_image_id.size());
-            bool is_last_part = (request.at("Last-Part") == "1");
+            std::string target = request.target();
 
-            auto& request_body = request.body();
-            std::vector<char> body_data(request_body.begin(), request_body.end());
-            std::cout << "Received part size: " << request_body.size() << std::endl;
-            request_body.clear();
-
-            if (image_parts.find(image_id) == image_parts.end()) { // если это первая часть изображения
-
-                std::string body_str(body_data.begin(), body_data.end());
-                size_t separator_pos = body_str.find("\n\n");
-
-                if (separator_pos != std::string::npos) {
-
-                    std::string text = body_str.substr(0, separator_pos); // текст для наложения
-                    std::vector<unsigned char> image_data(body_str.begin() + separator_pos + 2, body_str.end());
-
-                    std::cout << "Extracted text: " << text << "\n";
-
-                    text_parts[image_id] = std::move(text);
-                    image_parts[image_id] = std::move(image_data);
-                }
-                else {
-                    std::cerr << "Error: No separator found in the first part\n";
-                    return;
-                }
+            if (target == "/json_metadata") {
+                handleJsonMetadata();
             }
-            else { // иначе добавляются только данные изображения
-                std::vector<unsigned char>& image_data = image_parts[image_id];
-                image_data.insert(image_data.end(), body_data.begin(), body_data.end());
-            }
-
-            // Если в запросе помечено, что эта часть изображения - последняя
-            if (is_last_part) {
-                processImage(image_id);
-                --active_requests;
+            else if (target == "/") {
+                handleImageParts();
             }
             else {
-                --active_requests;
-                // Чтение следующего запроса
-                Read();
+                std::cerr << "Unknown request target: " << target << "\n";
             }
         }
     }
     else {
         std::cerr << "Error in async_read function: " << err.what() << "\n";
+    }
+}
+
+void Session::handleJsonMetadata() {
+    try {
+        const auto& request_image_id = request.at("Image-ID");
+        std::string image_id(request_image_id.data(), request_image_id.size());
+
+        std::string body_str(request.body().begin(), request.body().end());
+        request.body().clear();
+        boost::json::value json_data = boost::json::parse(body_str);
+        std::string overlay_text = std::string(json_data.at("overlay_text").as_string());
+
+        text_parts[image_id] = overlay_text;
+        std::cout << "Received text for " << image_id << ": " << overlay_text << "\n";
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error parsing JSON: " << e.what() << "\n";
+    }
+
+    --active_requests;
+    Read();
+}
+
+void Session::handleImageParts() {
+    try {
+        const auto& request_image_id = request.at("Image-ID");
+        std::string image_id(request_image_id.data(), request_image_id.size());
+        bool is_last_part = (request.at("Last-Part") == "1");
+
+        auto& request_body = request.body();
+        std::vector<char> body_data(request_body.begin(), request_body.end());
+        std::cout << "Received part size: " << request_body.size() << std::endl;
+        request_body.clear();
+
+        std::vector<unsigned char>& image_data = image_parts[image_id];
+        image_data.insert(image_data.end(), body_data.begin(), body_data.end());
+
+        // Если в запросе помечено, что эта часть изображения - последняя
+        if (is_last_part) {
+            processImage(image_id);
+            --active_requests;
+        }
+        else {
+            --active_requests;
+            // Чтение следующего запроса
+            Read();
+        }
+    }
+    catch (const std::exception& e) {
+        std::cerr << "Error handling image: " << e.what() << "\n";
     }
 }
 

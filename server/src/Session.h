@@ -22,10 +22,12 @@ public:
 private:
 	tcp::socket socket;
 	beast::flat_buffer buffer;
-	http::request<http::vector_body<char>> request;
+	http::request<http::vector_body<unsigned char>> request;
 private:
 	void Read();
 	void handleRead(boost::system::error_code& err, std::size_t);
+	void handleJsonMetadata();
+	void handleImageParts();
 	void processImage(const std::string& image_id);
 	void sendNextPart(size_t offset, size_t total_size, const std::string& image_id, const std::vector<unsigned char>& image_data);
 	void handleWrite(boost::system::error_code& err, std::size_t);
