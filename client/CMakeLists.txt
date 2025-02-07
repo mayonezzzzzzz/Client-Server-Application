@@ -8,4 +8,4 @@ set(CLIENT_SOURCES
 add_executable(http_client ${CLIENT_SOURCES})
 
 target_include_directories(http_client PRIVATE ${Boost_INCLUDE_DIRS})
-target_link_libraries(http_client Boost::program_options)
+target_link_libraries(http_client Boost::program_options Boost::json)

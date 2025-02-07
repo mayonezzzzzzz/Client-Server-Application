@@ -4,7 +4,7 @@ project(Client_Server_Application)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
 
-find_package(Boost REQUIRED COMPONENTS program_options CONFIG)
+find_package(Boost REQUIRED COMPONENTS program_options json CONFIG)
 find_package(OpenCV REQUIRED)
 find_package(libjpeg-turbo REQUIRED CONFIG)
 

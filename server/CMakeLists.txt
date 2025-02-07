@@ -10,4 +10,4 @@ set(SERVER_SOURCES
 add_executable(http_server ${SERVER_SOURCES})
 
 target_include_directories(http_server PRIVATE ${Boost_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
-target_link_libraries(http_server Boost::program_options ${OpenCV_LIBS} libjpeg-turbo::jpeg)
+target_link_libraries(http_server Boost::program_options Boost::json ${OpenCV_LIBS} libjpeg-turbo::jpeg)
