@@ -1,8 +1,9 @@
 #include "MessageHandler.h"
 #include "Session.h"
 
-MessageHandler::MessageHandler(std::shared_ptr<asio::io_context> ioc, const std::string port) :
+MessageHandler::MessageHandler(const std::shared_ptr<asio::io_context>& ioc, const std::string& port) :
     ioc(ioc), acceptor(*ioc, tcp::endpoint(asio::ip::make_address_v4("0.0.0.0"), std::stoi(port))) {
+
     acceptor.set_option(asio::socket_base::reuse_address(true)); // позволяет использовать порт и адрес сокета повторно, если тот был закрыт недавно
     acceptor.listen();
     std::cout << "HTTP server started. Port - " << port << "\n";

@@ -12,7 +12,7 @@ using tcp = boost::asio::ip::tcp;
 // Класс для обработки соединений
 class MessageHandler : public std::enable_shared_from_this<MessageHandler> {
 public:
-	MessageHandler(std::shared_ptr<asio::io_context> ioc, const std::string port);
+	MessageHandler(const std::shared_ptr<asio::io_context>& ioc, const std::string& port);
 	void startHandle();
 	~MessageHandler() {
 		std::cout << "MessageHandler object was deleted\n";
