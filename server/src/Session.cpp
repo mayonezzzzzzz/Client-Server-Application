@@ -28,6 +28,8 @@ void Session::Start() {
 
 void Session::Read() {
     std::cout << "Start reading requests\n";
+    // Запрос сбрасывается со всеми заголовками и телом
+    request = {};
     http::async_read(socket, buffer, request, beast::bind_front_handler(&Session::handleRead, shared_from_this()));
 }
 
@@ -104,7 +106,6 @@ void Session::handleJsonMetadata() {
         std::string image_id(request_image_id.data(), request_image_id.size());
 
         std::string body_str(request.body().begin(), request.body().end());
-        request.body().clear();
         boost::json::value json_data = boost::json::parse(body_str);
         std::string overlay_text = std::string(json_data.at("overlay_text").as_string());
 
@@ -128,7 +129,6 @@ void Session::handleImageParts() {
         auto& request_body = request.body();
         std::vector<char> body_data(request_body.begin(), request_body.end());
         std::cout << "Received part size: " << request_body.size() << std::endl;
-        request_body.clear();
 
         std::vector<unsigned char>& image_data = image_parts[image_id];
         image_data.insert(image_data.end(), body_data.begin(), body_data.end());
