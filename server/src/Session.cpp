@@ -37,17 +37,17 @@ void Session::sendNextPart(size_t offset, size_t total_size, const std::string& 
         size_t part_size = std::min(BUFFER_SIZE, total_size - offset);
         bool is_last_part = (offset + part_size == total_size);
 
-        auto response = std::make_shared<http::response<http::vector_body<unsigned char>>>(http::status::ok, 11);
-        response->set(http::field::content_type, "image/jpeg");
-        response->set("Image-ID", image_id);
-        response->set("Last-Part", is_last_part ? "1" : "0");
-        response->body().assign(image_data.begin() + offset, image_data.begin() + offset + part_size);
-        response->prepare_payload();
+        http::response<http::vector_body<unsigned char>> response(http::status::ok, 11);
+        response.set(http::field::content_type, "image/jpeg");
+        response.set("Image-ID", image_id);
+        response.set("Last-Part", is_last_part ? "1" : "0");
+        response.body().assign(image_data.begin() + offset, image_data.begin() + offset + part_size);
+        response.prepare_payload();
 
         offset += part_size;
 
         http::async_write(
-            socket, *response,
+            socket, response,
             beast::bind_front_handler(&Session::handleWrite, shared_from_this())
         );
 
