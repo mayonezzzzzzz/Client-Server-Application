@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
         auto ioc = std::make_shared<asio::io_context>(numOfProcessors);
 
         // Используется порт, указанный в параметрах
-        auto message_handler = std::make_shared<MessageHandler>(ioc, params.port);
+        auto message_handler = MessageHandler::createMessageHandler(ioc, params.port);
         message_handler->startHandle();
 
         // Пул потоков

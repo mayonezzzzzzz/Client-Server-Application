@@ -9,6 +9,10 @@ MessageHandler::MessageHandler(const std::shared_ptr<asio::io_context>& ioc, con
     std::cout << "HTTP server started. Port - " << port << "\n";
 }
 
+std::shared_ptr<MessageHandler> MessageHandler::createMessageHandler(const std::shared_ptr<asio::io_context>& ioc, const std::string& port) {
+    return std::shared_ptr<MessageHandler>(new MessageHandler(ioc, port));
+}
+
 // Метод для постоянного отслеживания новых соединений
 void MessageHandler::startHandle() {
     auto self = shared_from_this(); // для продления времени жизни объекта (пока используется в async_accept - не будет уничтожен)
