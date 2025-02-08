@@ -11,7 +11,7 @@ using tcp = asio::ip::tcp;
 const size_t MAX_INPUT_LENGTH = 100;
 const size_t BUFFER_SIZE = 1024 * 1024;
 
-bool checkDirectory(std::string& path) {
+bool changeDirectoryIfIncorrect(std::string& path) {
     std::error_code ec;
     if (ec || !std::filesystem::is_directory(path, ec)) {
         std::cerr << "Invalid directory - " << path << "\n";
@@ -23,8 +23,8 @@ bool checkDirectory(std::string& path) {
 }
 
 void detectDirectories(ClientParams& params) {
-    checkDirectory(params.images_path);
-    checkDirectory(params.responses_path);
+    changeDirectoryIfIncorrect(params.images_path);
+    changeDirectoryIfIncorrect(params.responses_path);
 }
 
 int main(int argc, char* argv[]) {
