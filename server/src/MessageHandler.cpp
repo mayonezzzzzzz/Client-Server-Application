@@ -10,7 +10,7 @@ MessageHandler::MessageHandler(const std::shared_ptr<asio::io_context>& ioc, con
 }
 
 std::shared_ptr<MessageHandler> MessageHandler::createMessageHandler(const std::shared_ptr<asio::io_context>& ioc, const std::string& port) {
-    return std::shared_ptr<MessageHandler>(new MessageHandler(ioc, port));
+    return std::make_shared<MessageHandler>(ioc, port);
 }
 
 // Метод для постоянного отслеживания новых соединений
