@@ -23,7 +23,7 @@ void MessageHandler::startHandle() {
         if(!err) {
             std::cout << "New connection accepted\n";
             // Создается объект сессии - обработки сообщений для данного соединения
-            auto session = std::make_shared<Session>(std::move(socket));
+            auto session = Session::createSession(std::move(socket));
             session->Start();
         }
         else {

@@ -21,6 +21,10 @@ static std::unordered_map<std::string, std::string> text_parts;
 
 Session::Session(tcp::socket&& socket) : socket(std::move(socket)), buffer(), request() {};
 
+std::shared_ptr<Session> Session::createSession(tcp::socket&& socket) {
+    return std::make_shared<Session>(std::move(socket));
+}
+
 void Session::Start() {
     std::cout << "New session started\n";
     asio::post(socket.get_executor(), beast::bind_front_handler(&Session::Read, shared_from_this())); // автоматический захват shared_from_this() -> продление времени жизни объекта

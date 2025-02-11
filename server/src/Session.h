@@ -15,6 +15,7 @@ extern size_t MAX_REQUESTS;
 class Session : public std::enable_shared_from_this<Session> {
 public:
 	Session(tcp::socket&& socket);
+	static std::shared_ptr<Session> createSession(tcp::socket&& socket);
 	void Start();
 	~Session() {
 		std::cout << "Session object was deleted\n";
