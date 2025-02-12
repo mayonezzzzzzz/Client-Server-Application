@@ -10,7 +10,9 @@ MessageHandler::MessageHandler(const std::shared_ptr<asio::io_context>& ioc, con
 }
 
 std::shared_ptr<MessageHandler> MessageHandler::createMessageHandler(const std::shared_ptr<asio::io_context>& ioc, const std::string& port) {
-    return std::make_shared<MessageHandler>(ioc, port);
+    auto handler = std::make_shared<MessageHandler>(ioc, port);
+    handler->startHandle();
+    return handler;
 }
 
 // Метод для постоянного отслеживания новых соединений
@@ -24,7 +26,6 @@ void MessageHandler::startHandle() {
             std::cout << "New connection accepted\n";
             // Создается объект сессии - обработки сообщений для данного соединения
             auto session = Session::createSession(std::move(socket));
-            session->Start();
         }
         else {
             std::cerr << "Error in async_accept function: " << err.what() << "\n";

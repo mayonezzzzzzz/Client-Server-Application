@@ -22,7 +22,9 @@ static std::unordered_map<std::string, std::string> text_parts;
 Session::Session(tcp::socket&& socket) : socket(std::move(socket)), buffer(), request() {};
 
 std::shared_ptr<Session> Session::createSession(tcp::socket&& socket) {
-    return std::make_shared<Session>(std::move(socket));
+    auto session = std::make_shared<Session>(std::move(socket));
+    session->Start();
+    return session;
 }
 
 void Session::Start() {
