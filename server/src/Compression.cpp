@@ -3,7 +3,7 @@
 #include "Compression.h"
 
 // Функция для декомпрессии полученного изображения
-bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& image_data, int& width, int& height, int& quality) {
+bool decompress(const std::vector<unsigned char>& jpeg_data, std::vector<unsigned char>& image_data, int& width, int& height) {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
 
@@ -11,16 +11,15 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
     jpeg_create_decompress(&cinfo);
 
     // Ввод данных
-    jpeg_mem_src(&cinfo, reinterpret_cast<const unsigned char*>(jpeg_data.data()), jpeg_data.size());
+    jpeg_mem_src(&cinfo, jpeg_data.data(), jpeg_data.size());
 
     if (jpeg_read_header(&cinfo, TRUE) != JPEG_HEADER_OK) {
         std::cerr << "Error reading JPEG header." << std::endl;
+        jpeg_destroy_decompress(&cinfo);
         return false;
     }
     width = cinfo.image_width;
     height = cinfo.image_height;
-    // Потенциально - функция для сохранения качества (степени сжатия) изображения, используя таблицы квантования
-    //quality = quality_from_quantization_tables(cinfo.quant_tbl_ptrs);
 
     jpeg_start_decompress(&cinfo);
 
@@ -38,7 +37,7 @@ bool decompress(const std::vector<char>& jpeg_data, std::vector<unsigned char>& 
 }
 
 // Функция для компрессии обработанного на сервере изображения
-bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& jpeg_data, int width, int height, int& quality) {
+bool compress(std::vector<unsigned char>& image_data, std::vector<unsigned char>& jpeg_data, const int width, const int height) {
     struct jpeg_compress_struct cinfo;
     struct jpeg_error_mgr jerr;
 
@@ -55,19 +54,19 @@ bool compress(const std::vector<unsigned char>& image_data, std::vector<char>& j
     cinfo.input_components = 3; // RGB
     cinfo.in_color_space = JCS_RGB;
     jpeg_set_defaults(&cinfo);
-    jpeg_set_quality(&cinfo, quality, TRUE);
+    jpeg_set_quality(&cinfo, 75, TRUE); // Стандартное значение качества (оптимальная таблица квантования для баланса между качеством и размером)
 
     jpeg_start_compress(&cinfo, TRUE);
 
     while (cinfo.next_scanline < cinfo.image_height) {
-        unsigned char* row_pointer = const_cast<unsigned char*>(&image_data[cinfo.next_scanline * width * 3]);
+        unsigned char* row_pointer = &image_data[cinfo.next_scanline * width * 3];
         jpeg_write_scanlines(&cinfo, &row_pointer, 1);
     }
 
     jpeg_finish_compress(&cinfo);
 
     // Результат копируется в выходной вектор
-    jpeg_data.assign(reinterpret_cast<char*>(jpeg_buffer), reinterpret_cast<char*>(jpeg_buffer) + jpeg_size);
+    jpeg_data.assign(jpeg_buffer, jpeg_buffer + jpeg_size);
 
     jpeg_destroy_compress(&cinfo);
     return true;

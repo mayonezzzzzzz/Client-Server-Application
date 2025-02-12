@@ -13,8 +13,6 @@ namespace beast = boost::beast;
 namespace http = boost::beast::http;
 using tcp = asio::ip::tcp;
 
-// Максимальный размер тела сообщения - 1Мб
-const size_t BUFFER_SIZE = 1024 * 1024;
-
-void sendPart(tcp::resolver& resolver, tcp::socket& socket, const std::string& address, const std::vector<char>& part, const std::string& image_id, bool is_last_part);
+void sendTextJson(tcp::socket& socket, const std::string& address, const std::string& image_id, const std::string& overlay_text);
+void sendPart(tcp::socket& socket, const std::string& address, const std::vector<unsigned char>& part, const std::string& image_id, bool is_last_part);
 void receiveParts(tcp::socket& socket, const std::string& image_id, const std::filesystem::path& save_path);

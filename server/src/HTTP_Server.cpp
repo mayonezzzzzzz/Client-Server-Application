@@ -1,4 +1,6 @@
 #include "MessageHandler.h"
+#include "Session.h"
+#include "Params.h"
 #include <iostream>
 #include <vector>
 #include <thread>
@@ -7,13 +9,18 @@
 namespace asio = boost::asio;
 using tcp = asio::ip::tcp;
 
-int main() {
+int main(int argc, char* argv[]) {
     try {
-        const auto& numOfProcessors = std::thread::hardware_concurrency();
+        // Парсинг аргументов командной строки
+        ServerParams params = parseCommandLine(argc, argv);
+
+        MAX_REQUESTS = params.max_requests;
+
+        const auto& numOfProcessors = std::max(1u, std::thread::hardware_concurrency() - 1);
         auto ioc = std::make_shared<asio::io_context>(numOfProcessors);
 
-        auto message_handler = std::make_shared<MessageHandler>(ioc);
-        message_handler->startHandle();
+        // Используется порт, указанный в параметрах
+        auto message_handler = MessageHandler::createMessageHandler(ioc, params.port);
 
         // Пул потоков
         std::vector<std::thread> threads;

@@ -1,4 +1,2 @@
+# Ignore CMake usual build directory
 build
-client/responses
-client/images
-Libs
